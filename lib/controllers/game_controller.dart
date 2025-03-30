@@ -1,7 +1,9 @@
 import 'dart:math';
 import 'package:get/get.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../models/move_direction.dart';
 import '../widgets/game_over_dialog.dart';
+import '../services/ad_service.dart';
 
 class GameController extends GetxController {
   final int gridSize = 4;
@@ -11,9 +13,13 @@ class GameController extends GetxController {
   RxInt highScore = 0.obs;
   Rx<MoveDirection> lastMoveDirection = MoveDirection.none.obs;
 
-  // Powerups: one Undo and one Shuffle per round.
+  // Powerups: one free Undo and one free Shuffle per round.
   RxInt undoMovesLeft = 1.obs;
   RxInt shuffleMovesLeft = 1.obs;
+
+  // Flags to track if an extra powerup (via ad) has been used.
+  RxBool adExtraUndoUsed = false.obs;
+  RxBool adExtraShuffleUsed = false.obs;
 
   // To support undo, store the previous board state and score.
   List<List<int>>? previousBoard;
@@ -30,6 +36,8 @@ class GameController extends GetxController {
     // Reset powerup counters.
     undoMovesLeft.value = 1;
     shuffleMovesLeft.value = 1;
+    adExtraUndoUsed.value = false;
+    adExtraShuffleUsed.value = false;
     board.value = List.generate(
         gridSize, (_) => List.generate(gridSize, (_) => 0));
     previousBoard = null;
@@ -38,13 +46,12 @@ class GameController extends GetxController {
     addNewTile();
   }
 
-  // Call this to store the current state before a move.
+  // Save state for undo.
   void storePreviousState() {
     previousBoard = board.value.map((row) => [...row]).toList();
     previousScore = score.value;
   }
 
-  // Adds a new tile (2 or 4) at a random empty spot.
   void addNewTile() {
     List<List<int>> emptyPositions = [];
     for (int i = 0; i < gridSize; i++) {
@@ -62,7 +69,6 @@ class GameController extends GetxController {
     }
   }
 
-  // Merges a line (row or column) following 2048 rules.
   List<int> mergeLine(List<int> line) {
     List<int> newLine = line.where((x) => x != 0).toList();
     for (int i = 0; i < newLine.length - 1; i++) {
@@ -80,7 +86,7 @@ class GameController extends GetxController {
     return newLine;
   }
 
-  // Move left.
+  // In each move method, store state, then process the move.
   void moveLeft() {
     lastMoveDirection.value = MoveDirection.left;
     bool moved = false;
@@ -98,7 +104,6 @@ class GameController extends GetxController {
     checkGameOver();
   }
 
-  // Move right.
   void moveRight() {
     lastMoveDirection.value = MoveDirection.right;
     bool moved = false;
@@ -117,7 +122,6 @@ class GameController extends GetxController {
     checkGameOver();
   }
 
-  // Move up.
   void moveUp() {
     lastMoveDirection.value = MoveDirection.up;
     bool moved = false;
@@ -141,7 +145,6 @@ class GameController extends GetxController {
     checkGameOver();
   }
 
-  // Move down.
   void moveDown() {
     lastMoveDirection.value = MoveDirection.down;
     bool moved = false;
@@ -166,7 +169,35 @@ class GameController extends GetxController {
     checkGameOver();
   }
 
-  // Undo Move powerup.
+  bool _listEquals(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  bool canMove() {
+    for (int i = 0; i < gridSize; i++) {
+      for (int j = 0; j < gridSize; j++) {
+        if (board[i][j] == 0) return true;
+        if (j < gridSize - 1 && board[i][j] == board[i][j + 1]) return true;
+        if (i < gridSize - 1 && board[i][j] == board[i + 1][j]) return true;
+      }
+    }
+    return false;
+  }
+
+  void checkGameOver() {
+    if (!canMove()) {
+      Get.dialog(
+        GameOverDialog(finalScore: score.value),
+        barrierDismissible: false,
+      );
+    }
+  }
+
+  // Powerup methods.
   void undoMove() {
     if (undoMovesLeft.value > 0 &&
         previousBoard != null &&
@@ -178,7 +209,6 @@ class GameController extends GetxController {
     }
   }
 
-  // Shuffle Board powerup.
   void shuffleBoard() {
     if (shuffleMovesLeft.value > 0) {
       List<int> flat = board.value.expand((row) => row).toList();
@@ -193,35 +223,30 @@ class GameController extends GetxController {
     }
   }
 
-  // Utility: Compare two lists.
-  bool _listEquals(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
+  // Watch a rewarded ad for extra powerup.
+  void watchAdForExtraPowerup(String type) {
+    // If already used for this type, do nothing.
+    if (type == "undo" && adExtraUndoUsed.value) return;
+    if (type == "shuffle" && adExtraShuffleUsed.value) return;
 
-  // Returns true if at least one move is possible.
-  bool canMove() {
-    for (int i = 0; i < gridSize; i++) {
-      for (int j = 0; j < gridSize; j++) {
-        if (board[i][j] == 0) return true;
-        if (j < gridSize - 1 && board[i][j] == board[i][j + 1]) return true;
-        if (i < gridSize - 1 && board[i][j] == board[i + 1][j]) return true;
-      }
-    }
-    return false;
-  }
-
-  // Check for game over.
-  void checkGameOver() {
-    if (!canMove()) {
-      Get.dialog(
-        // Use our custom game over dialog.
-        GameOverDialog(finalScore: score.value),
-        barrierDismissible: false,
-      );
-    }
+    AdService.instance.loadRewardedAd(
+      onAdLoaded: () {
+        AdService.instance.showRewardedAd(
+            onUserEarnedReward: (ad, RewardItem reward) {
+              if (type == "undo") {
+                undoMovesLeft.value++;
+                adExtraUndoUsed.value = true;
+              } else if (type == "shuffle") {
+                shuffleMovesLeft.value++;
+                adExtraShuffleUsed.value = true;
+              }
+            },
+          onAdClosed: () {},
+        );
+      },
+      onAdFailedToLoad: () {
+        Get.snackbar("Ad Error", "Failed to load ad, please try again later.");
+      },
+    );
   }
 }

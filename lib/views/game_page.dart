@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/game_board.dart';
 import '../widgets/score_card.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class GamePage extends StatelessWidget {
   final GameController gameController = Get.put(GameController());
@@ -101,13 +102,14 @@ class GamePage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed:
-                          gameController.undoMovesLeft.value > 0
-                              ? () {
-                                HapticFeedback.mediumImpact();
-                                gameController.undoMove();
-                              }
-                              : null,
+                      onPressed: () {
+                        if (gameController.undoMovesLeft.value > 0) {
+                          HapticFeedback.mediumImpact();
+                          gameController.undoMove();
+                        } else {
+                          _showWatchAdDialog(context, "undo", gameController);
+                        }
+                      },
                       icon: Icon(Icons.undo, size: 16, color: Colors.white),
                       label: Text(
                         'Undo (${gameController.undoMovesLeft.value})',
@@ -156,13 +158,14 @@ class GamePage extends StatelessWidget {
                   SizedBox(width: 4),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed:
-                          gameController.shuffleMovesLeft.value > 0
-                              ? () {
-                                HapticFeedback.mediumImpact();
-                                gameController.shuffleBoard();
-                              }
-                              : null,
+                      onPressed: () {
+                        if (gameController.undoMovesLeft.value > 0) {
+                          HapticFeedback.mediumImpact();
+                          gameController.undoMove();
+                        } else {
+                          _showWatchAdDialog(context, "shuffle", gameController);
+                        }
+                      },
                       icon: Icon(Icons.shuffle, size: 16, color: Colors.white),
                       label: Text(
                         'Shuffle (${gameController.shuffleMovesLeft.value})',
@@ -185,20 +188,38 @@ class GamePage extends StatelessWidget {
                 ],
               ),
             ),
-
             SizedBox(height: 16),
-            // Placeholder for ads.
-            Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(child: Text('Ads Placeholder')),
-            ),
+            // Banner Ad at the bottom.
+            BannerAdWidget(),
           ],
         ),
       ),
     );
   }
+
+  void _showWatchAdDialog(BuildContext context, String type, GameController controller) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Extra ${type.capitalize!}"),
+          content: Text("You have used all your free $type powerups. Would you like to watch a short ad to get an extra $type?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("No"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.watchAdForExtraPowerup(type);
+              },
+              child: Text("Yes"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }
