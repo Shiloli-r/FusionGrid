@@ -31,22 +31,26 @@ class GamePage extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Score display area with animated score changes.
+            // Score display area.
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Obx(() => ScoreCard(
-                  label: "Score",
-                  score: gameController.score.value,
-                )),
-                Obx(() => ScoreCard(
-                  label: "High Score",
-                  score: gameController.highScore.value,
-                )),
+                Obx(
+                  () => ScoreCard(
+                    label: "Score",
+                    score: gameController.score.value,
+                  ),
+                ),
+                Obx(
+                  () => ScoreCard(
+                    label: "High Score",
+                    score: gameController.highScore.value,
+                  ),
+                ),
               ],
             ),
             SizedBox(height: 16),
-            // Game board container with gradient background, rounded corners, and shadow.
+            // Game board container.
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -61,7 +65,7 @@ class GamePage extends StatelessWidget {
                       color: Colors.black26,
                       blurRadius: 8,
                       offset: Offset(2, 2),
-                    )
+                    ),
                   ],
                 ),
                 padding: const EdgeInsets.all(8.0),
@@ -84,27 +88,104 @@ class GamePage extends StatelessWidget {
                       gameController.moveRight();
                     }
                   },
-                  child: Obx(() => GameBoard(board: gameController.board.value)),
+                  child: Obx(
+                    () => GameBoard(board: gameController.board.value),
+                  ),
                 ),
               ),
             ),
             SizedBox(height: 16),
-            // Additional restart button at the bottom.
-            ElevatedButton.icon(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                gameController.resetGame();
-              },
-              icon: Icon(Icons.refresh, color: Colors.white),
-              label: Text('Restart Game'),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white, backgroundColor: Colors.deepPurple,
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
+            // Powerups row: Undo, Restart, and Shuffle.
+            Obx(
+              () => Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          gameController.undoMovesLeft.value > 0
+                              ? () {
+                                HapticFeedback.mediumImpact();
+                                gameController.undoMove();
+                              }
+                              : null,
+                      icon: Icon(Icons.undo, size: 16, color: Colors.white),
+                      label: Text(
+                        'Undo (${gameController.undoMovesLeft.value})',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.deepPurple,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        gameController.resetGame();
+                      },
+                      icon: Icon(Icons.refresh, size: 16, color: Colors.white),
+                      label: Text(
+                        'Restart',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.deepPurple,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          gameController.shuffleMovesLeft.value > 0
+                              ? () {
+                                HapticFeedback.mediumImpact();
+                                gameController.shuffleBoard();
+                              }
+                              : null,
+                      icon: Icon(Icons.shuffle, size: 16, color: Colors.white),
+                      label: Text(
+                        'Shuffle (${gameController.shuffleMovesLeft.value})',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.deepPurple,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+
             SizedBox(height: 16),
             // Placeholder for ads.
             Container(

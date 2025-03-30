@@ -1,17 +1,23 @@
 import 'dart:math';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/move_direction.dart';
+import '../widgets/game_over_dialog.dart';
 
 class GameController extends GetxController {
   final int gridSize = 4;
-  // The board state: a 4x4 grid
+  // Board state and score.
   RxList<List<int>> board = RxList<List<int>>([]);
-  // Score tracking
   RxInt score = 0.obs;
   RxInt highScore = 0.obs;
-  // Track the last swipe direction for animations
   Rx<MoveDirection> lastMoveDirection = MoveDirection.none.obs;
+
+  // Powerups: one Undo and one Shuffle per round.
+  RxInt undoMovesLeft = 1.obs;
+  RxInt shuffleMovesLeft = 1.obs;
+
+  // To support undo, store the previous board state and score.
+  List<List<int>>? previousBoard;
+  int? previousScore;
 
   @override
   void onInit() {
@@ -21,10 +27,21 @@ class GameController extends GetxController {
 
   void resetGame() {
     score.value = 0;
+    // Reset powerup counters.
+    undoMovesLeft.value = 1;
+    shuffleMovesLeft.value = 1;
     board.value = List.generate(
         gridSize, (_) => List.generate(gridSize, (_) => 0));
+    previousBoard = null;
+    previousScore = null;
     addNewTile();
     addNewTile();
+  }
+
+  // Call this to store the current state before a move.
+  void storePreviousState() {
+    previousBoard = board.value.map((row) => [...row]).toList();
+    previousScore = score.value;
   }
 
   // Adds a new tile (2 or 4) at a random empty spot.
@@ -45,21 +62,17 @@ class GameController extends GetxController {
     }
   }
 
-  // Merges a single line (row or column) per 2048 rules.
+  // Merges a line (row or column) following 2048 rules.
   List<int> mergeLine(List<int> line) {
-    // Remove zeros.
     List<int> newLine = line.where((x) => x != 0).toList();
-    // Merge adjacent tiles.
     for (int i = 0; i < newLine.length - 1; i++) {
       if (newLine[i] == newLine[i + 1]) {
         newLine[i] *= 2;
-        // Add merged value to score.
         score.value += newLine[i];
         newLine[i + 1] = 0;
-        i++; // Skip the next element.
+        i++;
       }
     }
-    // Remove zeros again and pad with zeros.
     newLine = newLine.where((x) => x != 0).toList();
     while (newLine.length < gridSize) {
       newLine.add(0);
@@ -71,13 +84,12 @@ class GameController extends GetxController {
   void moveLeft() {
     lastMoveDirection.value = MoveDirection.left;
     bool moved = false;
+    storePreviousState();
     for (int i = 0; i < gridSize; i++) {
       List<int> original = List.from(board[i]);
       List<int> merged = mergeLine(board[i]);
       board[i] = merged;
-      if (!_listEquals(original, merged)) {
-        moved = true;
-      }
+      if (!_listEquals(original, merged)) moved = true;
     }
     if (moved) {
       if (score.value > highScore.value) highScore.value = score.value;
@@ -90,14 +102,13 @@ class GameController extends GetxController {
   void moveRight() {
     lastMoveDirection.value = MoveDirection.right;
     bool moved = false;
+    storePreviousState();
     for (int i = 0; i < gridSize; i++) {
       List<int> original = List.from(board[i]);
       List<int> reversed = board[i].reversed.toList();
       List<int> merged = mergeLine(reversed).reversed.toList();
       board[i] = merged;
-      if (!_listEquals(original, merged)) {
-        moved = true;
-      }
+      if (!_listEquals(original, merged)) moved = true;
     }
     if (moved) {
       if (score.value > highScore.value) highScore.value = score.value;
@@ -110,6 +121,7 @@ class GameController extends GetxController {
   void moveUp() {
     lastMoveDirection.value = MoveDirection.up;
     bool moved = false;
+    storePreviousState();
     for (int j = 0; j < gridSize; j++) {
       List<int> column = [];
       for (int i = 0; i < gridSize; i++) {
@@ -120,9 +132,7 @@ class GameController extends GetxController {
       for (int i = 0; i < gridSize; i++) {
         board[i][j] = merged[i];
       }
-      if (!_listEquals(original, merged)) {
-        moved = true;
-      }
+      if (!_listEquals(original, merged)) moved = true;
     }
     if (moved) {
       if (score.value > highScore.value) highScore.value = score.value;
@@ -135,6 +145,7 @@ class GameController extends GetxController {
   void moveDown() {
     lastMoveDirection.value = MoveDirection.down;
     bool moved = false;
+    storePreviousState();
     for (int j = 0; j < gridSize; j++) {
       List<int> column = [];
       for (int i = 0; i < gridSize; i++) {
@@ -146,9 +157,7 @@ class GameController extends GetxController {
       for (int i = 0; i < gridSize; i++) {
         board[i][j] = merged[i];
       }
-      if (!_listEquals(original, merged)) {
-        moved = true;
-      }
+      if (!_listEquals(original, merged)) moved = true;
     }
     if (moved) {
       if (score.value > highScore.value) highScore.value = score.value;
@@ -157,7 +166,34 @@ class GameController extends GetxController {
     checkGameOver();
   }
 
-  // Utility: compares two lists.
+  // Undo Move powerup.
+  void undoMove() {
+    if (undoMovesLeft.value > 0 &&
+        previousBoard != null &&
+        previousScore != null) {
+      board.value = previousBoard!;
+      score.value = previousScore!;
+      board.refresh();
+      undoMovesLeft.value--;
+    }
+  }
+
+  // Shuffle Board powerup.
+  void shuffleBoard() {
+    if (shuffleMovesLeft.value > 0) {
+      List<int> flat = board.value.expand((row) => row).toList();
+      flat.shuffle();
+      List<List<int>> newBoard = [];
+      for (int i = 0; i < gridSize; i++) {
+        newBoard.add(flat.sublist(i * gridSize, (i + 1) * gridSize));
+      }
+      board.value = newBoard;
+      board.refresh();
+      shuffleMovesLeft.value--;
+    }
+  }
+
+  // Utility: Compare two lists.
   bool _listEquals(List<int> a, List<int> b) {
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
@@ -171,33 +207,19 @@ class GameController extends GetxController {
     for (int i = 0; i < gridSize; i++) {
       for (int j = 0; j < gridSize; j++) {
         if (board[i][j] == 0) return true;
-        // Check right neighbor.
         if (j < gridSize - 1 && board[i][j] == board[i][j + 1]) return true;
-        // Check down neighbor.
         if (i < gridSize - 1 && board[i][j] == board[i + 1][j]) return true;
       }
     }
     return false;
   }
 
-  // Checks for game over and shows a dialog if no moves are possible.
+  // Check for game over.
   void checkGameOver() {
     if (!canMove()) {
-      // Show a game over dialog (non-dismissible).
       Get.dialog(
-        AlertDialog(
-          title: Text("Game Over"),
-          content: Text("No more moves available!"),
-          actions: [
-            TextButton(
-              onPressed: () {
-                resetGame();
-                Get.back(); // Close the dialog.
-              },
-              child: Text("Restart"),
-            ),
-          ],
-        ),
+        // Use our custom game over dialog.
+        GameOverDialog(finalScore: score.value),
         barrierDismissible: false,
       );
     }
