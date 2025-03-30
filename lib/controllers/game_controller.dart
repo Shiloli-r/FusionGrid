@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/move_direction.dart';
 import '../widgets/game_over_dialog.dart';
 import '../services/ad_service.dart';
@@ -28,7 +29,26 @@ class GameController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _loadHighScore();
     resetGame();
+  }
+
+  Future<void> _loadHighScore() async {
+    final prefs = await SharedPreferences.getInstance();
+    highScore.value = prefs.getInt('highScore') ?? 0;
+  }
+
+  Future<void> _saveHighScore() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('highScore', highScore.value);
+  }
+
+  // Whenever you update highScore, call _saveHighScore.
+  void updateHighScoreIfNeeded() {
+    if (score.value > highScore.value) {
+      highScore.value = score.value;
+      _saveHighScore();
+    }
   }
 
   void resetGame() {
@@ -100,6 +120,7 @@ class GameController extends GetxController {
     if (moved) {
       if (score.value > highScore.value) highScore.value = score.value;
       addNewTile();
+      updateHighScoreIfNeeded();
     }
     checkGameOver();
   }
@@ -118,6 +139,7 @@ class GameController extends GetxController {
     if (moved) {
       if (score.value > highScore.value) highScore.value = score.value;
       addNewTile();
+      updateHighScoreIfNeeded();
     }
     checkGameOver();
   }
@@ -141,6 +163,7 @@ class GameController extends GetxController {
     if (moved) {
       if (score.value > highScore.value) highScore.value = score.value;
       addNewTile();
+      updateHighScoreIfNeeded();
     }
     checkGameOver();
   }
@@ -165,6 +188,7 @@ class GameController extends GetxController {
     if (moved) {
       if (score.value > highScore.value) highScore.value = score.value;
       addNewTile();
+      updateHighScoreIfNeeded();
     }
     checkGameOver();
   }
