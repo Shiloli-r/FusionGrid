@@ -1,51 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../utils/constants.dart';
+import '../../controllers/game_controller.dart';
+import '../../models/move_direction.dart';
 
-class GridTileBox extends StatelessWidget {
+class GridTileWidget extends StatelessWidget {
   final int value;
 
-  const GridTileBox({super.key, required this.value});
+  const GridTileWidget({super.key, required this.value});
 
   @override
   Widget build(BuildContext context) {
+    // Get the last move direction from the controller.
+    final moveDirection = Get.find<GameController>().lastMoveDirection.value;
+    Offset beginOffset;
+    switch (moveDirection) {
+      case MoveDirection.left:
+        beginOffset = Offset(0.3, 0);
+        break;
+      case MoveDirection.right:
+        beginOffset = Offset(-0.3, 0);
+        break;
+      case MoveDirection.up:
+        beginOffset = Offset(0, 0.3);
+        break;
+      case MoveDirection.down:
+        beginOffset = Offset(0, -0.3);
+        break;
+      default:
+        beginOffset = Offset(0, 0);
+    }
+
     return Container(
-      margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: _getTileColor(value),
+        color: getTileColor(value),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
-        child: Text(
-          value == 0 ? '' : value.toString(),
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+        child: value > 0
+            ? AnimatedSwitcher(
+          duration: Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) {
+            // Combine slide and scale transitions.
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: beginOffset,
+                end: Offset.zero,
+              ).animate(animation),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.8, end: 1.0).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Text(
+            '$value',
+            key: ValueKey<int>(value),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        )
+            : SizedBox.shrink(),
       ),
     );
-  }
-
-  Color _getTileColor(int value) {
-    switch (value) {
-      case 0:
-        return Colors.grey[300]!;
-      case 2:
-        return Color(0xFFB2DFDB); // Light teal
-      case 4:
-        return Color(0xFF80CBC4);
-      case 8:
-        return Color(0xFF4DB6AC);
-      case 16:
-        return Color(0xFF26A69A);
-      case 32:
-        return Color(0xFF009688);
-      case 64:
-        return Color(0xFF00897B);
-      case 128:
-        return Color(0xFF00796B);
-      case 256:
-        return Color(0xFF00695C);
-      case 512:
-        return Color(0xFF004D40);
-      default:
-        return Color(0xFF00332C);
-    }
   }
 }
