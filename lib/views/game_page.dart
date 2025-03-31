@@ -159,9 +159,9 @@ class GamePage extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        if (gameController.undoMovesLeft.value > 0) {
+                        if (gameController.shuffleMovesLeft.value > 0) {
                           HapticFeedback.mediumImpact();
-                          gameController.undoMove();
+                          gameController.shuffleBoard();
                         } else {
                           _showWatchAdDialog(context, "shuffle", gameController);
                         }

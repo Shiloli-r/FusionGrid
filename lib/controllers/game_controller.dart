@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,11 +37,14 @@ class GameController extends GetxController {
   Future<void> _loadHighScore() async {
     final prefs = await SharedPreferences.getInstance();
     highScore.value = prefs.getInt('highScore') ?? 0;
+    final loadedHighScore = prefs.getInt('highScore') ?? 0;
+    print("Loaded highScore: $loadedHighScore");
   }
 
   Future<void> _saveHighScore() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('highScore', highScore.value);
+    print("Saved highScore: ${highScore.value}");
   }
 
   // Whenever you update highScore, call _saveHighScore.
@@ -59,7 +63,9 @@ class GameController extends GetxController {
     adExtraUndoUsed.value = false;
     adExtraShuffleUsed.value = false;
     board.value = List.generate(
-        gridSize, (_) => List.generate(gridSize, (_) => 0));
+      gridSize,
+      (_) => List.generate(gridSize, (_) => 0),
+    );
     previousBoard = null;
     previousScore = null;
     addNewTile();
@@ -118,7 +124,6 @@ class GameController extends GetxController {
       if (!_listEquals(original, merged)) moved = true;
     }
     if (moved) {
-      if (score.value > highScore.value) highScore.value = score.value;
       addNewTile();
       updateHighScoreIfNeeded();
     }
@@ -137,7 +142,6 @@ class GameController extends GetxController {
       if (!_listEquals(original, merged)) moved = true;
     }
     if (moved) {
-      if (score.value > highScore.value) highScore.value = score.value;
       addNewTile();
       updateHighScoreIfNeeded();
     }
@@ -161,7 +165,6 @@ class GameController extends GetxController {
       if (!_listEquals(original, merged)) moved = true;
     }
     if (moved) {
-      if (score.value > highScore.value) highScore.value = score.value;
       addNewTile();
       updateHighScoreIfNeeded();
     }
@@ -186,7 +189,6 @@ class GameController extends GetxController {
       if (!_listEquals(original, merged)) moved = true;
     }
     if (moved) {
-      if (score.value > highScore.value) highScore.value = score.value;
       addNewTile();
       updateHighScoreIfNeeded();
     }
@@ -256,20 +258,25 @@ class GameController extends GetxController {
     AdService.instance.loadRewardedAd(
       onAdLoaded: () {
         AdService.instance.showRewardedAd(
-            onUserEarnedReward: (ad, RewardItem reward) {
-              if (type == "undo") {
-                undoMovesLeft.value++;
-                adExtraUndoUsed.value = true;
-              } else if (type == "shuffle") {
-                shuffleMovesLeft.value++;
-                adExtraShuffleUsed.value = true;
-              }
-            },
+          onUserEarnedReward: (ad, RewardItem reward) {
+            if (type == "undo") {
+              undoMovesLeft.value++;
+              adExtraUndoUsed.value = true;
+            } else if (type == "shuffle") {
+              shuffleMovesLeft.value++;
+              adExtraShuffleUsed.value = true;
+            }
+          },
           onAdClosed: () {},
         );
       },
       onAdFailedToLoad: () {
-        Get.snackbar("Ad Error", "Failed to load ad, please try again later.");
+        Get.snackbar(
+          "No Ads at the moment",
+          "Failed to load ad, please try again later.",
+          backgroundColor: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
       },
     );
   }
