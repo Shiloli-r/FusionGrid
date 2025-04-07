@@ -23,7 +23,7 @@ class GamePage extends StatelessWidget {
             icon: Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
               HapticFeedback.lightImpact();
-              gameController.resetGame();
+              _confirmRestart(context);
             },
           ),
         ],
@@ -134,7 +134,7 @@ class GamePage extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         HapticFeedback.mediumImpact();
-                        gameController.resetGame();
+                        _confirmRestart(context);
                       },
                       icon: Icon(Icons.refresh, size: 16, color: Colors.white),
                       label: Text(
@@ -163,7 +163,11 @@ class GamePage extends StatelessWidget {
                           HapticFeedback.mediumImpact();
                           gameController.shuffleBoard();
                         } else {
-                          _showWatchAdDialog(context, "shuffle", gameController);
+                          _showWatchAdDialog(
+                            context,
+                            "shuffle",
+                            gameController,
+                          );
                         }
                       },
                       icon: Icon(Icons.shuffle, size: 16, color: Colors.white),
@@ -197,13 +201,19 @@ class GamePage extends StatelessWidget {
     );
   }
 
-  void _showWatchAdDialog(BuildContext context, String type, GameController controller) {
+  void _showWatchAdDialog(
+    BuildContext context,
+    String type,
+    GameController controller,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text("Extra ${type.capitalize!}"),
-          content: Text("You have used all your free $type powerups. Would you like to watch a short ad to get an extra $type?"),
+          content: Text(
+            "You have used all your free $type powerups. Would you like to watch a short ad to get an extra $type?",
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -222,4 +232,29 @@ class GamePage extends StatelessWidget {
     );
   }
 
+  void _confirmRestart(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text("Restart Game?"),
+            content: Text(
+              "Are you sure you want to restart? Your current progress will be lost.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // close dialog
+                  gameController.resetGame(); // restart the game
+                },
+                child: Text("Restart"),
+              ),
+            ],
+          ),
+    );
+  }
 }
