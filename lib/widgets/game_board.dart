@@ -12,7 +12,8 @@ class GameBoard extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 1,
       child: GridView.builder(
-        physics: NeverScrollableScrollPhysics(), // Disable scrolling to capture vertical swipes
+        physics:
+            NeverScrollableScrollPhysics(), // Disable scrolling to capture vertical swipes
         itemCount: gridSize * gridSize,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: gridSize,
@@ -23,7 +24,7 @@ class GameBoard extends StatelessWidget {
           int row = index ~/ gridSize;
           int col = index % gridSize;
           int value = board[row][col];
-          return GridTileWidget(value: value);
+          return GridTileWidget(value: value, row: row, col: col);
         },
       ),
     );

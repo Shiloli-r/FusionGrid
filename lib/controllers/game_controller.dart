@@ -13,6 +13,7 @@ class GameController extends GetxController {
   RxList<List<int>> board = RxList<List<int>>([]);
   RxInt score = 0.obs;
   RxInt highScore = 0.obs;
+  Rx<Point<int>?> lastNewTile = Rx<Point<int>?>(null);
   Rx<MoveDirection> lastMoveDirection = MoveDirection.none.obs;
 
   // Powerups: one free Undo and one free Shuffle per round.
@@ -91,6 +92,7 @@ class GameController extends GetxController {
       final random = Random();
       var pos = emptyPositions[random.nextInt(emptyPositions.length)];
       board[pos[0]][pos[1]] = (random.nextDouble() < 0.9) ? 2 : 4;
+      lastNewTile.value = Point(pos[0], pos[1]); // Track the last added tile
       board.refresh();
     }
   }

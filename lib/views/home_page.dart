@@ -44,10 +44,7 @@ class HomePage extends StatelessWidget {
                 // Tagline.
                 Text(
                   'Swipe, Fuse & Score!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 24, color: Colors.white70),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 48),
@@ -57,30 +54,24 @@ class HomePage extends StatelessWidget {
                     Get.to(() => GamePage());
                   },
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.deepPurpleAccent, backgroundColor: Colors.white,
+                    foregroundColor: Colors.deepPurpleAccent,
+                    backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    padding:
-                    EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                    padding: EdgeInsets.symmetric(horizontal: 48, vertical: 16),
                     elevation: 8,
                   ),
                   child: Text(
                     'Play Now',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ),
                 SizedBox(height: 24),
                 // Short description.
                 Text(
                   'Merge the numbers and reach the highest score.\nChallenge yourself and see how far you can go!',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
                   textAlign: TextAlign.center,
                 ),
               ],
